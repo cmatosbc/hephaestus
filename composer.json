@@ -1,0 +1,23 @@
+{
+    "name": "cmatosbc/hephaestus",
+    "description": "God-like error handling for modern PHP programmers.",
+    "type": "library",
+    "license": "gpl-3.0-or-later",
+    "authors": [
+        {
+            "name": "Carlos MAtos",
+            "email": "carlosarturmatos1977@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Hephaestus\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.4"
+    }
+}
