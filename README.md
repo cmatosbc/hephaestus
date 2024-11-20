@@ -5,6 +5,7 @@ God-like error handling library for modern PHP programmers.
 
 - **Option Type (Some/None)**: Rust-inspired Option type for handling nullable values elegantly
 - **CheckedException**: Java-inspired checked exceptions for explicit error handling
+- **Retry Logic**: Elegant retry mechanism for operations that might fail temporarily
 
 ## Installation
 
@@ -115,6 +116,64 @@ try {
 }
 ```
 
+### Retry Logic
+
+The library provides a retry mechanism for operations that might fail temporarily:
+
+```php
+use function Hephaestus\withRetryBeforeFailing;
+
+// Create an HTTP client that retries 3 times
+$retrier = withRetryBeforeFailing(3);
+
+try {
+    $result = $retrier(function() {
+        $response = file_get_contents('https://api.example.com/data');
+        if ($response === false) {
+            throw new \Exception("Failed to fetch data");
+        }
+        return json_decode($response, true);
+    });
+    echo "Data fetched successfully!";
+} catch (\Exception $e) {
+    echo "All retry attempts failed: " . $e->getMessage();
+}
+
+// Combining with Option type
+function fetchDataSafely($url): Option {
+    $retrier = withRetryBeforeFailing(3);
+    try {
+        $data = $retrier(function() use ($url) {
+            $response = file_get_contents($url);
+            if ($response === false) {
+                throw new \Exception("Failed to fetch data");
+            }
+            return json_decode($response, true);
+        });
+        return Some($data);
+    } catch (\Exception $e) {
+        error_log("Failed to fetch data after retries: " . $e->getMessage());
+        return None();
+    }
+}
+
+// Usage
+$data = fetchDataSafely('https://api.example.com/data')
+    ->map(fn($d) => $d['value'])
+    ->getOrElse('default value');
+```
+
+The retry mechanism is useful for:
+- Network operations that might fail temporarily
+- Database operations with transient failures
+- Any operation that might succeed on a subsequent attempt
+
+The retrier will:
+1. Attempt the operation
+2. On failure, wait 1 second
+3. Retry up to the specified number of times
+4. If all attempts fail, throw an exception with the history of failures
+
 ## Benefits
 
 - **Type Safety**: Avoid null pointer exceptions with Option types
@@ -122,3 +181,4 @@ try {
 - **Explicit Error Handling**: High-order function for handling checked exceptions
 - **Better Code Organization**: Separate happy path from error handling
 - **Self-Documenting Code**: Make potential failures visible in method signatures
+- **Resilient Operations**: Built-in retry mechanism for transient failures
