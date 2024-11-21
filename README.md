@@ -1,4 +1,4 @@
-# hephaestus
+# Hephaestus
 God-like error handling library for modern PHP programmers.
 
 ## Features
