@@ -6,6 +6,7 @@ God-like error handling library for modern PHP programmers.
 - **Option Type (Some/None)**: Rust-inspired Option type for handling nullable values elegantly
 - **CheckedException**: Java-inspired checked exceptions for explicit error handling
 - **Retry Logic**: Elegant retry mechanism for operations that might fail temporarily
+- **EnhancedException**: Advanced error handling with state tracking and exception history management
 
 ## Installation
 
@@ -173,6 +174,94 @@ The retrier will:
 2. On failure, wait 1 second
 3. Retry up to the specified number of times
 4. If all attempts fail, throw an exception with the history of failures
+
+### EnhancedException
+
+The EnhancedException class provides advanced error handling capabilities with state tracking and exception history management:
+
+```php
+use Hephaestus\EnhancedException;
+
+class DatabaseException extends EnhancedException {}
+
+function performDatabaseOperation() {
+    try {
+        $dbState = ['connection' => 'active', 'query' => 'SELECT * FROM users'];
+        
+        // Simulate database error
+        throw new DatabaseException(
+            "Failed to execute query",
+            0,
+            new \PDOException("Connection lost")
+        );
+    } catch (DatabaseException $e) {
+        // Save the database state at the time of failure
+        $e->saveState($dbState, 'database_state');
+        
+        // Add additional context
+        $e->addToExceptionHistory(new \RuntimeException("Retry attempt failed"));
+        
+        // Get all saved states
+        $states = $e->getAllStates();
+        error_log("Database state at failure: " . json_encode($states['database_state']));
+        
+        // Check for specific types of errors
+        if ($e->hasExceptionOfType(\PDOException::class)) {
+            $pdoErrors = $e->getExceptionsOfType(\PDOException::class);
+            // Handle PDO-specific errors
+        }
+        
+        // Get the most recent error
+        $lastError = $e->getLastException();
+        error_log("Last error: " . $lastError->getMessage());
+        
+        throw $e; // Re-throw with all the collected context
+    }
+}
+
+// Using with Option type for safer error handling
+function fetchUserSafely(int $userId): Option {
+    try {
+        $result = performDatabaseOperation();
+        return Some($result);
+    } catch (DatabaseException $e) {
+        // We can examine the complete error history
+        foreach ($e->getExceptionHistory() as $error) {
+            error_log("Error in chain: " . $error->getMessage());
+        }
+        return None();
+    }
+}
+
+// Usage
+$userData = fetchUserSafely(42)
+    ->map(fn($user) => $user['name'])
+    ->getOrElse('Unknown User');
+```
+
+Key features of EnhancedException:
+
+1. **State Tracking**
+   - Save snapshots of application state at different points
+   - Label states for easy retrieval
+   - Track the progression of state changes
+
+2. **Exception History**
+   - Maintain a chain of related exceptions
+   - Filter exceptions by type
+   - Access the most recent exception
+   - Track the complete error context
+
+3. **Integration with Option**
+   - Combine with Option type for functional error handling
+   - Chain operations safely after error recovery
+   - Provide default values when errors occur
+
+The EnhancedException is particularly useful for:
+- Complex operations with multiple potential failure points
+- Debugging distributed systems
+- Tracking state changes during failures
+- Building comprehensive error reports
 
 ## Benefits
 
