@@ -1,0 +1,30 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        public: false
+
+    Hephaestus\Bundle\:
+        resource: '../../'
+        exclude:
+            - '../../Resources'
+            - '../../DependencyInjection'
+            - '../../**/Exception/*'
+
+    # Option Factory Service
+    hephaestus.option_factory:
+        class: Hephaestus\Bundle\Service\OptionFactory
+        public: true
+
+    # Exception Handler Service
+    hephaestus.exception_handler:
+        class: Hephaestus\Bundle\Service\ExceptionHandler
+        arguments:
+            $logger: '@logger'
+            $debug: '%kernel.debug%'
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, method: onKernelException }
+
+    # Explicitly configure the enhanced exception class as a service
+    Hephaestus\Bundle\Exception\SymfonyEnhancedException:
+        public: false

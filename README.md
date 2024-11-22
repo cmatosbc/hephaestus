@@ -263,6 +263,252 @@ The EnhancedException is particularly useful for:
 - Tracking state changes during failures
 - Building comprehensive error reports
 
+## Symfony Bundle
+
+The Hephaestus Bundle provides seamless integration with Symfony applications, offering enhanced error handling, Option type integration with forms, and configurable logging.
+
+### Installation
+
+1. Install via Composer:
+```bash
+composer require cmatosbc/hephaestus
+```
+
+2. Register the bundle in `config/bundles.php`:
+```php
+return [
+    // ...
+    Hephaestus\Bundle\HephaestusBundle::class => ['all' => true],
+];
+```
+
+3. Create configuration file `config/packages/hephaestus.yaml`:
+```yaml
+hephaestus:
+    exception_handling:
+        max_retries: 3    # Maximum retry attempts for transient failures
+        retry_delay: 1    # Delay in seconds between retries
+    logging:
+        enabled: true     # Enable enhanced exception logging
+        channel: hephaestus  # Custom logging channel
+```
+
+### Features
+
+#### 1. Enhanced Exception Handling
+
+The bundle provides a Symfony-aware exception handler that automatically converts exceptions to HTTP responses and includes detailed error context:
+
+```php
+use Hephaestus\Bundle\Exception\SymfonyEnhancedException;
+use Symfony\Component\HttpFoundation\Response;
+
+class UserController extends AbstractController
+{
+    public function create(Request $request): Response
+    {
+        try {
+            $result = $this->userService->createUser($request->request->all());
+            return $this->json($result);
+        } catch (ValidationException $e) {
+            throw new SymfonyEnhancedException(
+                'Invalid user data',
+                Response::HTTP_BAD_REQUEST,
+                [],
+                0,
+                $e
+            );
+        } catch (DatabaseException $e) {
+            // The exception will be automatically logged with full context
+            throw new SymfonyEnhancedException(
+                'Failed to create user',
+                Response::HTTP_INTERNAL_SERVER_ERROR,
+                [],
+                0,
+                $e
+            );
+        }
+    }
+}
+```
+
+The exception handler will automatically:
+- Convert exceptions to appropriate HTTP responses
+- Log detailed error context including exception history
+- Maintain the full exception chain for debugging
+- Format error responses as JSON with proper status codes
+
+#### 2. Option Type Integration with Forms
+
+The bundle provides an `OptionFactory` service that integrates the Option type with Symfony forms:
+
+```php
+use Hephaestus\Bundle\Service\OptionFactory;
+
+class RegistrationController extends AbstractController
+{
+    public function __construct(
+        private OptionFactory $optionFactory
+    ) {}
+
+    public function register(Request $request): Response
+    {
+        $form = $this->createForm(RegistrationType::class);
+        $form->handleRequest($request);
+
+        return $this->optionFactory->fromForm($form)
+            ->map(fn($data) => $this->userService->register($data))
+            ->match(
+                some: fn($user) => $this->redirectToRoute('app_login'),
+                none: fn() => $this->render('registration/register.html.twig', [
+                    'form' => $form->createView(),
+                ])
+            );
+    }
+}
+```
+
+The `OptionFactory` provides several utility methods:
+```php
+// Create Option from nullable value
+$userOption = $optionFactory->fromNullable($user);
+
+// Create Option from array key
+$nameOption = $optionFactory->fromArrayKey($data, 'name');
+
+// Create Option from callable that might fail
+$resultOption = $optionFactory->fromCallable([$service, 'riskyOperation']);
+```
+
+#### 3. Exception State Tracking
+
+The `SymfonyEnhancedException` maintains state information and exception history:
+
+```php
+use Hephaestus\Bundle\Exception\SymfonyEnhancedException;
+
+class PaymentService
+{
+    public function processPayment(array $paymentData): void
+    {
+        try {
+            $this->validatePayment($paymentData);
+            $this->performPayment($paymentData);
+        } catch (PaymentValidationException $e) {
+            $exception = new SymfonyEnhancedException(
+                'Payment validation failed',
+                Response::HTTP_BAD_REQUEST,
+                [],
+                0,
+                $e
+            );
+            
+            // Add context about the failed validation
+            $exception->saveState([
+                'payment_data' => $paymentData,
+                'validation_errors' => $e->getErrors(),
+            ], 'validation_context');
+            
+            throw $exception;
+        } catch (PaymentProcessingException $e) {
+            $exception = new SymfonyEnhancedException(
+                'Payment processing failed',
+                Response::HTTP_SERVICE_UNAVAILABLE,
+                [],
+                0,
+                $e
+            );
+            
+            // Add payment processing state
+            $exception->saveState([
+                'payment_id' => $paymentData['id'],
+                'processor_response' => $e->getResponse(),
+            ], 'payment_context');
+            
+            throw $exception;
+        }
+    }
+}
+```
+
+The exception state and history will be automatically:
+- Logged with full context
+- Included in debug responses (in dev environment)
+- Available for custom error handling
+
+#### 4. Retry Logic Integration
+
+The bundle integrates the retry mechanism with Symfony's service container:
+
+```php
+use function Hephaestus\withRetryBeforeFailing;
+
+class ExternalServiceClient
+{
+    public function __construct(
+        private HttpClientInterface $client,
+        private LoggerInterface $logger
+    ) {}
+
+    public function fetchData(): array
+    {
+        $retrier = withRetryBeforeFailing(3); // Use configured retry count
+        
+        return $retrier(function() {
+            $response = $this->client->request('GET', 'https://api.example.com/data');
+            
+            if ($response->getStatusCode() !== 200) {
+                throw new ServiceException('Failed to fetch data');
+            }
+            
+            return $response->toArray();
+        });
+    }
+}
+```
+
+### Best Practices
+
+1. **Exception Handling**
+   - Use `SymfonyEnhancedException` for HTTP-aware error handling
+   - Add relevant state information using `saveState()`
+   - Let the bundle handle logging and response formatting
+
+2. **Form Handling**
+   - Use `OptionFactory->fromForm()` for clean form processing
+   - Chain operations using `map()` and `filter()`
+   - Use `match()` for explicit success/failure handling
+
+3. **Service Integration**
+   - Inject `OptionFactory` when working with forms or nullable values
+   - Configure retry attempts based on operation type
+   - Use the logging channel for filtered log access
+
+### Testing
+
+The bundle provides test utilities and assertions:
+
+```php
+use Hephaestus\Bundle\Test\OptionAssertions;
+
+class UserServiceTest extends TestCase
+{
+    use OptionAssertions;
+
+    public function testUserCreation(): void
+    {
+        $result = $this->userService->createUser($userData);
+        
+        $this->assertOptionIsSome($result);
+        $this->assertOptionContains($result, fn($user) => 
+            $user->getEmail() === $userData['email']
+        );
+    }
+}
+```
+
+For more examples and detailed documentation, visit the [Symfony Bundle Documentation](https://github.com/cmatosbc/hephaestus/wiki/Symfony-Bundle).
+
 ## Benefits
 
 - **Type Safety**: Avoid null pointer exceptions with Option types
