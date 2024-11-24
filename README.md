@@ -128,6 +128,131 @@ $data = fetchDataSafely('https://api.example.com/data')
     ->getOrElse('default');
 ```
 
+### Pattern-Matched Exception Handling
+
+Hephaestus provides a powerful pattern-matched exception handling system that allows you to define custom error messages and descriptions for different exception types.
+
+#### Setting Up Exception Patterns
+
+First, generate the exception patterns file using the `hephaestus` command:
+
+```bash
+# Generate exceptions.json with all available exception classes
+./vendor/bin/hephaestus init
+```
+
+This will create an `exceptions.json` file in your project root with the following structure:
+
+```json
+{
+    "RuntimeException": {
+        "message": "Runtime Error",
+        "description": "An error that can only be detected during program execution."
+    },
+    "InvalidArgumentException": {
+        "message": "Invalid Input",
+        "description": "The provided argument is not valid for this operation."
+    }
+}
+```
+
+You can customize the messages and descriptions in this file to match your application's needs.
+
+#### Using Pattern-Matched Exception Handling
+
+The `withMatchedExceptions()` function provides a clean way to handle exceptions using the patterns defined in your `exceptions.json` file:
+
+```php
+use function Hephaestus\withMatchedExceptions;
+
+// Basic usage
+$result = withMatchedExceptions(
+    fn() => $connection->connect()
+);
+
+// With a custom patterns file
+$result = withMatchedExceptions(
+    fn() => $service->riskyOperation(),
+    __DIR__ . '/custom/patterns.json'
+);
+
+// With a custom default message
+$result = withMatchedExceptions(
+    fn() => $api->request(),
+    null,
+    'API Error'
+);
+
+// Using array callable
+$result = withMatchedExceptions(
+    [$service, 'method']
+);
+```
+
+When an exception occurs, it will be matched against the patterns in your `exceptions.json` file, and a formatted error message will be returned:
+
+```php
+// If a DatabaseException occurs:
+"Database Error: Failed to connect to localhost"
+
+Description: A database connection or operation error occurred. Check your database credentials and ensure the database server is running.
+```
+
+#### Command Line Tool
+
+The `hephaestus` command line tool helps you manage your exception patterns:
+
+```bash
+# Generate patterns file
+./vendor/bin/hephaestus init
+
+# View available commands
+./vendor/bin/hephaestus list
+```
+
+#### Command Options
+
+- `init`: Generates the `exceptions.json` file
+  - Scans your project for exception classes
+  - Creates human-readable messages from class names
+  - Extracts descriptions from class docblocks when available
+  - Prompts before overwriting existing file
+
+#### Customizing Exception Patterns
+
+You can customize your `exceptions.json` file to provide more specific messages and descriptions:
+
+```json
+{
+    "App\\Exceptions\\DatabaseException": {
+        "message": "Database Connection Failed",
+        "description": "Unable to establish a connection to the database. Please check your database configuration and ensure the database server is running."
+    },
+    "App\\Exceptions\\ValidationException": {
+        "message": "Invalid Input Data",
+        "description": "The provided data failed validation. Please check your input and try again."
+    }
+}
+```
+
+#### Error Message Format
+
+The error messages returned by `withMatchedExceptions()` follow this format:
+
+```
+[Custom Message]: [Exception Message]
+
+Description: [Custom Description]
+```
+
+For unmatched exceptions, a default message is used:
+
+```
+Unexpected error: [Exception Message]
+
+Description: A general error has occurred.
+```
+
 ## Symfony Integration
 
 ### Option Factory Service
