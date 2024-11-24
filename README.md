@@ -176,8 +176,10 @@ class UserController
     {
         return $this->optionFactory
             ->fromCallable(fn() => $this->userRepository->find($id))
-            ->getOrThrow(fn() => new UserNotFoundException($id))
-            ->toResponse();
+            ->match(
+                some: fn($user) => $this->json($user),
+                none: fn() => throw new UserNotFoundException($id)
+            );
     }
 }
 ```
