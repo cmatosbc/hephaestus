@@ -1,5 +1,7 @@
 # Hephaestus
 
+[![PHP Composer](https://github.com/cmatosbc/hephaestus/actions/workflows/main.yml/badge.svg)](https://github.com/cmatosbc/hephaestus/actions/workflows/main.yml)
+
 God-like error handling library for modern PHP programmers. Hephaestus provides a comprehensive set of tools for elegant error handling, combining functional programming concepts with robust exception management.
 
 ## Features
