@@ -76,3 +76,71 @@ function Some($value): Some {
 function None(): None {
     return Option::none();
 }
+
+/**
+ * Executes a callable with pattern-matched exception handling using patterns from exceptions.json.
+ * 
+ * @param \Closure|array|string $func The function or callable to be executed.
+ * @param string|null $patternsFile Optional path to the patterns JSON file. If null, looks in the current directory.
+ * @param string $defaultPattern Optional default message pattern for unmatched exceptions.
+ * @param mixed ...$args Arguments to be passed to the callable.
+ * @return mixed The result of the callable execution, or the error message if an exception occurs.
+ * @throws \RuntimeException If the patterns file cannot be found or is invalid.
+ *
+ * Example:
+ *   $result = withMatchedExceptions(
+ *       fn() => $connection->connect()
+ *   );
+ */
+function withMatchedExceptions(
+    \Closure|array|string $func,
+    ?string $patternsFile = null,
+    string $defaultPattern = "Unexpected error",
+    mixed ...$args
+) {
+    // Load patterns from JSON file
+    $patternsFile = $patternsFile ?? getcwd() . '/exceptions.json';
+    
+    if (!file_exists($patternsFile)) {
+        throw new \RuntimeException(
+            "Exception patterns file not found. Run 'hephaestus init' to generate it."
+        );
+    }
+
+    $patterns = json_decode(file_get_contents($patternsFile), true);
+    
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        throw new \RuntimeException(
+            "Invalid exception patterns file. Run 'hephaestus init' to regenerate it."
+        );
+    }
+
+    try {
+        if ($func instanceof \Closure) {
+            return $func(...$args);
+        }
+
+        if (is_array($func) || is_string($func)) {
+            return call_user_func($func, ...$args);
+        }
+    } catch (\Exception $e) {
+        // Find the first matching exception class
+        foreach ($patterns as $class => $pattern) {
+            if ($e instanceof $class) {
+                return sprintf(
+                    "%s: %s\n\nDescription: %s",
+                    $pattern['message'],
+                    $e->getMessage(),
+                    $pattern['description']
+                );
+            }
+        }
+        
+        // If no match found, use default pattern
+        return sprintf(
+            "%s: %s\n\nDescription: A general error has occurred.",
+            $defaultPattern,
+            $e->getMessage()
+        );
+    }
+}
