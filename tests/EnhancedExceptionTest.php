@@ -39,7 +39,7 @@ class EnhancedExceptionTest extends TestCase
         
         // Test adding more exceptions
         $additionalException = new SpecificException("Additional error");
-        $exception->addToExceptionHistory($additionalException);
+        $exception->addToHistory($additionalException);
         
         $this->assertCount(2, $exception->getExceptionHistory());
         $this->assertSame($additionalException, $exception->getLastException());
@@ -52,8 +52,8 @@ class EnhancedExceptionTest extends TestCase
         $runtimeException = new \RuntimeException("Runtime error");
         $specificException = new SpecificException("Specific error");
         
-        $exception->addToExceptionHistory($runtimeException)
-                 ->addToExceptionHistory($specificException);
+        $exception->addToHistory($runtimeException)
+                 ->addToHistory($specificException);
         
         // Test hasExceptionOfType
         $this->assertTrue($exception->hasExceptionOfType(\RuntimeException::class));
@@ -72,7 +72,7 @@ class EnhancedExceptionTest extends TestCase
         
         // Add some state and exceptions
         $exception->saveState(['data' => 'test'], 'test_state')
-                 ->addToExceptionHistory(new \RuntimeException("Error"));
+                 ->addToHistory(new \RuntimeException("Error"));
         
         // Verify data is present
         $this->assertCount(1, $exception->getAllStates());
@@ -111,9 +111,9 @@ class EnhancedExceptionTest extends TestCase
         $level3 = new \LogicException("Level 3 error");
         
         $exception = new TestEnhancedException("Main error");
-        $exception->addToExceptionHistory($level1)
-                 ->addToExceptionHistory($level2)
-                 ->addToExceptionHistory($level3);
+        $exception->addToHistory($level1)
+                 ->addToHistory($level2)
+                 ->addToHistory($level3);
         
         $history = $exception->getExceptionHistory();
         

@@ -57,16 +57,24 @@ class SymfonyEnhancedException extends EnhancedException implements HttpExceptio
                     'code' => $e->getCode(),
                 ],
                 $this->getExceptionHistory()
-            )
+            ),
         ];
 
         return new Response(
             json_encode($data, JSON_PRETTY_PRINT),
             $this->getStatusCode(),
             array_merge(
-                ['Content-Type' => 'application/json'],
-                $this->getHeaders()
+                $this->getHeaders(),
+                ['Content-Type' => 'application/json']
             )
         );
+    }
+
+    public function withExceptionHistory(array $exceptions): self
+    {
+        foreach ($exceptions as $exception) {
+            $this->addToHistory($exception);
+        }
+        return $this;
     }
 }

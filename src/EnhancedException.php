@@ -6,7 +6,7 @@ namespace Hephaestus;
  * EnhancedException provides enhanced exception handling capabilities with state tracking
  * and exception history management.
  */
-class EnhancedException extends CheckedException
+class EnhancedException extends \Exception
 {
     /**
      * @var array<string, mixed> Stores the state snapshots at different points
@@ -14,7 +14,7 @@ class EnhancedException extends CheckedException
     private array $stateHistory = [];
 
     /**
-     * @var \Exception[] Stores the chain of exceptions that occurred
+     * @var \Throwable[] Stores the chain of exceptions that occurred
      */
     private array $exceptionHistory = [];
 
@@ -29,7 +29,7 @@ class EnhancedException extends CheckedException
     {
         parent::__construct($message, $code, $previous);
         if ($previous) {
-            $this->addToExceptionHistory($previous);
+            $this->addToHistory($previous);
         }
     }
 
@@ -37,31 +37,27 @@ class EnhancedException extends CheckedException
      * Saves a state snapshot with an optional label
      *
      * @param mixed $state The state to save
-     * @param string|null $label Optional label for the state
+     * @param string $context Optional label for the state
      * @return self
      */
-    public function saveState(mixed $state, ?string $label = null): self
+    public function saveState(mixed $state, string $context = 'default'): self
     {
-        $timestamp = microtime(true);
-        $key = $label ?? $timestamp;
-        
-        $this->stateHistory[$key] = [
-            'timestamp' => $timestamp,
-            'state' => $state
+        $this->stateHistory[$context] = [
+            'state' => $state,
+            'timestamp' => microtime(true),
         ];
-        
         return $this;
     }
 
     /**
      * Retrieves a specific state by its label
      *
-     * @param string $label The label of the state to retrieve
+     * @param string $context The label of the state to retrieve
      * @return mixed|null The state if found, null otherwise
      */
-    public function getState(string $label): mixed
+    public function getState(string $context = 'default'): mixed
     {
-        return $this->stateHistory[$label]['state'] ?? null;
+        return $this->stateHistory[$context]['state'] ?? null;
     }
 
     /**
@@ -80,7 +76,7 @@ class EnhancedException extends CheckedException
      * @param \Throwable $exception
      * @return self
      */
-    public function addToExceptionHistory(\Throwable $exception): self
+    public function addToHistory(\Throwable $exception): self
     {
         $this->exceptionHistory[] = $exception;
         return $this;
@@ -89,7 +85,7 @@ class EnhancedException extends CheckedException
     /**
      * Gets the complete exception history
      *
-     * @return \Exception[]
+     * @return \Throwable[]
      */
     public function getExceptionHistory(): array
     {
@@ -99,9 +95,9 @@ class EnhancedException extends CheckedException
     /**
      * Gets the most recent exception from history
      *
-     * @return \Exception|null
+     * @return \Throwable|null
      */
-    public function getLastException(): ?\Exception
+    public function getLastException(): ?\Throwable
     {
         if (empty($this->exceptionHistory)) {
             return null;
@@ -148,6 +144,14 @@ class EnhancedException extends CheckedException
     {
         $this->stateHistory = [];
         $this->exceptionHistory = [];
+        return $this;
+    }
+
+    public function withExceptionHistory(array $exceptions): self
+    {
+        foreach ($exceptions as $exception) {
+            $this->addToHistory($exception);
+        }
         return $this;
     }
 }

@@ -7,6 +7,12 @@ God-like error handling library for modern PHP programmers.
 - **CheckedException**: Java-inspired checked exceptions for explicit error handling
 - **Retry Logic**: Elegant retry mechanism for operations that might fail temporarily
 - **EnhancedException**: Advanced error handling with state tracking and exception history management
+- **Symfony Bundle**: Seamless integration with Symfony framework for enhanced error handling
+
+## Requirements
+
+- PHP 8.1 or higher
+- Symfony 7.1 or higher (for bundle integration)
 
 ## Installation
 
@@ -14,7 +20,82 @@ God-like error handling library for modern PHP programmers.
 composer require cmatosbc/hephaestus
 ```
 
+For Symfony integration, register the bundle in your `config/bundles.php`:
+
+```php
+return [
+    // ...
+    Hephaestus\Bundle\HephaestusBundle::class => ['all' => true],
+];
+```
+
+## Configuration
+
+When using the Symfony bundle, you can configure it in your `config/packages/hephaestus.yaml`:
+
+```yaml
+hephaestus:
+    max_retries: 3
+    retry_delay: 1
+    logging:
+        enabled: true
+        channel: 'hephaestus'
+```
+
 ## Usage
+
+### Option Factory (Symfony Bundle)
+
+The bundle provides an `OptionFactory` service for creating Option types with retry capabilities:
+
+```php
+use Hephaestus\Bundle\Service\OptionFactory;
+
+class UserService
+{
+    public function __construct(private OptionFactory $optionFactory)
+    {}
+
+    public function findUser(int $id): Option
+    {
+        return $this->optionFactory->fromCallable(
+            fn() => $this->userRepository->find($id)
+        );
+    }
+}
+```
+
+### Enhanced Exception Handling (Symfony Bundle)
+
+The bundle provides `SymfonyEnhancedException` for HTTP-aware error handling:
+
+```php
+use Hephaestus\Bundle\Exception\SymfonyEnhancedException;
+
+class UserNotFoundException extends SymfonyEnhancedException
+{
+    public function __construct(int $userId)
+    {
+        parent::__construct(
+            "User not found",
+            Response::HTTP_NOT_FOUND
+        );
+        $this->saveState(['user_id' => $userId]);
+    }
+}
+
+class UserController
+{
+    public function show(int $id): Response
+    {
+        return $this->optionFactory->fromCallable(
+            fn() => $this->userRepository->find($id)
+        )
+        ->getOrThrow(fn() => new UserNotFoundException($id))
+        ->toResponse();
+    }
+}
+```
 
 ### withCheckedExceptionHandling
 
@@ -517,3 +598,11 @@ For more examples and detailed documentation, visit the [Symfony Bundle Document
 - **Better Code Organization**: Separate happy path from error handling
 - **Self-Documenting Code**: Make potential failures visible in method signatures
 - **Resilient Operations**: Built-in retry mechanism for transient failures
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

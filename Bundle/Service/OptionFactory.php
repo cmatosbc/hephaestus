@@ -2,6 +2,7 @@
 
 namespace Hephaestus\Bundle\Service;
 
+use Hephaestus\Bundle\Exception\SymfonyEnhancedException;
 use Hephaestus\Option;
 use Symfony\Component\Form\FormInterface;
 use function Hephaestus\Some;
@@ -9,16 +10,25 @@ use function Hephaestus\None;
 
 class OptionFactory
 {
+    private int $maxRetries;
+    private int $retryDelay;
+
+    public function __construct(int $maxRetries = 3, int $retryDelay = 1)
+    {
+        $this->maxRetries = $maxRetries;
+        $this->retryDelay = $retryDelay;
+    }
+
     /**
-     * Creates an Option from a nullable value
+     * Create an Option from a nullable value
      */
-    public function fromNullable(?mixed $value): Option
+    public function fromNullable(mixed $value): Option
     {
         return $value === null ? None() : Some($value);
     }
-    
+
     /**
-     * Creates an Option from a Symfony form
+     * Create an Option from a Symfony form
      */
     public function fromForm(FormInterface $form): Option
     {
@@ -28,23 +38,37 @@ class OptionFactory
     }
 
     /**
-     * Creates an Option from an array key
+     * Create an Option from an array key
      */
     public function fromArrayKey(array $array, string|int $key): Option
     {
-        return isset($array[$key]) ? Some($array[$key]) : None();
+        return array_key_exists($key, $array) ? Some($array[$key]) : None();
     }
 
     /**
-     * Creates an Option from a callable that might return null
+     * Create an Option from a callable that might throw an exception
      */
-    public function fromCallable(callable $callable, ...$args): Option
+    public function fromCallable(callable $callable, mixed ...$args): Option
     {
-        try {
-            $result = $callable(...$args);
-            return $this->fromNullable($result);
-        } catch (\Throwable $e) {
-            return None();
+        $attempts = 0;
+        $exceptions = [];
+
+        while ($attempts < $this->maxRetries) {
+            try {
+                return Some($callable(...$args));
+            } catch (\Throwable $e) {
+                $attempts++;
+                $exceptions[] = $e;
+
+                if ($attempts < $this->maxRetries) {
+                    sleep($this->retryDelay);
+                }
+            }
         }
+
+        throw (new SymfonyEnhancedException(
+            "Operation failed after {$this->maxRetries} attempts",
+            500
+        ))->withExceptionHistory($exceptions);
     }
 }
