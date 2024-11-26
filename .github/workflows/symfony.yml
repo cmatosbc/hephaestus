@@ -30,7 +30,7 @@ jobs:
         mv /home/runner/.symfony5/bin/symfony /usr/local/bin/symfony
 
     - name: Create Symfony App
-      run: symfony new my_project --full
+      run: symfony new my_project --webapp
 
     - name: Move Bundle to Project
       run: mv Bundle my_project/src/Bundle
