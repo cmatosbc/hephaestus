@@ -27,7 +27,7 @@ jobs:
     - name: Install Symfony CLI
       run: | 
         wget https://get.symfony.com/cli/installer -O - | bash
-        echo 'export PATH="$HOME/.symfony5/bin:$PATH"' >> $GITHUB_ENV
+        mv /home/runner/.symfony5/bin/symfony /usr/local/bin/symfony
 
     - name: Create Symfony App
       run: symfony new my_project --full
