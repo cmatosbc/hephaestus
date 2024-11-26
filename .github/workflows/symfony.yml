@@ -1,0 +1,64 @@
+name: Symfony Bundle Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2' # PHP version updated to 8.2
+        extensions: mbstring, intl
+        coverage: xdebug # If you need code coverage
+
+    - name: Install Composer
+      run: sudo apt-get install -y composer
+
+    - name: Install Symfony CLI
+      run: curl -sS https://get.symfony.com/cli/installer | bash
+      env:
+        SYMFONY_CLI_VERSION: stable
+
+    - name: Create Symfony App
+      run: symfony new my_project --full
+
+    - name: Move Bundle to Project
+      run: mv Bundle my_project/src/Bundle
+
+    - name: Configure Bundle
+      run: |
+        cd my_project
+        echo "App\Bundle\Hephaestus\HephaestusBundle::class => ['all' => true]," >> config/bundles.php
+        echo "
+        hephaestus:
+          max_retries: 3
+          retry_delay: 1
+          logging:
+            enabled: true
+            channel: 'hephaestus'
+        " >> config/packages/hephaestus.yaml
+
+    - name: Install Project Dependencies
+      run: cd my_project && composer install --prefer-dist --no-progress --no-suggest
+
+    - name: Configure Symfony
+      run: |
+        cd my_project
+        echo "APP_ENV=test" > .env.test
+        php bin/console doctrine:database:create --env=test
+        php bin/console doctrine:schema:update --force --env=test
+
+    - name: Run PHPUnit
+      run: |
+        cd my_project
+        vendor/bin/phpunit src/Bundle
