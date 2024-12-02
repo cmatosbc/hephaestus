@@ -1,36 +1,58 @@
 {
-    "name": "cmatosbc/hephaestus",
-    "description": "God-like error handling for modern PHP programmers.",
+    "name": "carlos/hephaestus",
+    "description": "A PHP library for functional error handling",
     "type": "library",
-    "license": "gpl-3.0-or-later",
-    "authors": [
-        {
-            "name": "Carlos Matos",
-            "email": "carlosarturmatos1977@gmail.com"
-        }
-    ],
+    "license": "GPL-3.0-or-later",
     "autoload": {
         "psr-4": {
-            "Hephaestus\\": "src/",
-            "Hephaestus\\Bundle\\": "Bundle/"
+            "Hephaestus\\": "src/"
         },
         "files": [
             "src/functions.php"
         ]
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Hephaestus\\Tests\\": "tests/"
+        }
+    },
+    "autoload-symfony": {
+        "psr-4": {
+            "Hephaestus\\Bundle\\": "bundle/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Carlos Matos",
+            "email": "carlosarturmatos@gmail.com"
+        }
+    ],
     "require": {
-        "php": ">=8.1",
-        "symfony/http-kernel": "^6.0|^7.0",
-        "symfony/dependency-injection": "^6.0|^7.0",
-        "symfony/config": "^6.0|^7.0",
-        "symfony/http-foundation": "^6.0|^7.0",
-        "psr/log": "^3.0"
+        "php": "^8.1",
+        "symfony/console": "^6.4 || ^7.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.4",
-        "symfony/form": "^6.0|^7.0"
+        "phpunit/phpunit": "^10.5",
+        "symfony/config": "^6.4 || ^7.0",
+        "symfony/dependency-injection": "^6.4 || ^7.0",
+        "symfony/form": "^6.4 || ^7.0",
+        "symfony/http-foundation": "^6.4 || ^7.0",
+        "symfony/http-kernel": "^6.4 || ^7.0"
     },
     "suggest": {
-        "symfony/form": "For integration with Symfony forms"
-    }
+        "symfony/framework-bundle": "To use Hephaestus with Symfony Framework (^6.4 || ^7.0)",
+        "symfony/http-kernel": "Required for Symfony integration (^6.4 || ^7.0)",
+        "symfony/dependency-injection": "Required for Symfony service container integration (^6.4 || ^7.0)",
+        "symfony/config": "Required for Symfony bundle configuration (^6.4 || ^7.0)",
+        "symfony/http-foundation": "Required for HTTP-aware exceptions (^6.4 || ^7.0)",
+        "symfony/form": "For integration with Symfony forms (^6.4 || ^7.0)"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true
+    },
+    "bin": [
+        "bin/hephaestus"
+    ]
 }
