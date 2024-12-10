@@ -11,7 +11,8 @@ namespace Hephaestus;
  * @return mixed The result of the callable execution, or null if a CheckedException was handled.
  * @throws CheckedException if a CheckedException is thrown during the callable execution.
  */
-function withCheckedExceptionHandling(\Closure|array|string $func, ...$args) {
+function withCheckedExceptionHandling(\Closure|array|string $func, ...$args)
+{
     try {
         if ($func instanceof \Closure) {
             return $func(...$args);
@@ -40,7 +41,8 @@ function withCheckedExceptionHandling(\Closure|array|string $func, ...$args) {
  *       // potentially failing operation
  *   });
  */
-function withRetryBeforeFailing(int $retries = 3) {
+function withRetryBeforeFailing(int $retries = 3)
+{
     return function (\Closure $operation) use ($retries) {
         $attempt = 0;
         while ($attempt < $retries) {
@@ -64,7 +66,8 @@ function withRetryBeforeFailing(int $retries = 3) {
  * @param mixed $value The value to be wrapped in a Some instance.
  * @return Some The Some instance wrapping the provided value.
  */
-function Some($value): Some {
+function Some($value): Some
+{
     return Option::some($value);
 }
 
@@ -73,6 +76,7 @@ function Some($value): Some {
  *
  * @return None
  */
-function None(): None {
+function None(): None
+{
     return Option::none();
 }

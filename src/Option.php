@@ -14,7 +14,8 @@ abstract class Option
      * @param mixed $value The value to be wrapped in a Some instance.
      * @return Some The Some instance wrapping the provided value.
      */
-    public static function some($value): Some {
+    public static function some($value): Some
+    {
         return new Some($value);
     }
 
@@ -23,7 +24,8 @@ abstract class Option
      *
      * @return None The None instance.
      */
-    public static function none(): None {
+    public static function none(): None
+    {
         return new None();
     }
 

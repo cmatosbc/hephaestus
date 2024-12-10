@@ -10,14 +10,16 @@ class None extends Option
     /**
      * {@inheritdoc}
      */
-    public function isSome(): bool {
+    public function isSome(): bool
+    {
         return false;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function isNone(): bool {
+    public function isNone(): bool
+    {
         return true;
     }
 

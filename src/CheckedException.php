@@ -4,5 +4,4 @@ namespace Hephaestus;
 
 class CheckedException extends \Exception
 {
-
 }
