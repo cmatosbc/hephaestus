@@ -1,5 +1,7 @@
 # Hephaestus
 
+[![PHP Lint](https://github.com/cmatosbc/hephaestus/actions/workflows/lint.yml/badge.svg)](https://github.com/cmatosbc/hephaestus/actions/workflows/lint.yml) [![PHPUnit Tests](https://github.com/cmatosbc/hephaestus/actions/workflows/phpunit.yml/badge.svg)](https://github.com/cmatosbc/hephaestus/actions/workflows/phpunit.yml)
+
 God-like error handling library for modern PHP programmers. Hephaestus provides a comprehensive set of tools for elegant error handling, combining functional programming concepts with robust exception management.
 
 ## Features
